@@ -1,9 +1,14 @@
-FROM debian:stretch-slim
+FROM golang:1.9.2-alpine3.7 as gcsfuse-builder
 
-RUN apt-get update && apt-get install -y curl fuse gnupg &&\
-		echo "deb http://packages.cloud.google.com/apt gcsfuse-stretch main" | tee /etc/apt/sources.list.d/gcsfuse.list &&\
-		curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - &&\
-		apt-get update && apt-get install -y  gcsfuse
+RUN apk add --update --no-cache git &&\
+		go get -v github.com/googlecloudplatform/gcsfuse
+
+FROM alpine:3.7
+
+RUN apk add --update --no-cache fuse ca-certificates && rm -rf /tmp/*
+
+COPY --from=gcsfuse-builder /go/bin/gcsfuse /usr/local/bin/
 
 COPY entrypoint.sh /usr/local/bin/
+
 ENTRYPOINT ["entrypoint.sh"]
